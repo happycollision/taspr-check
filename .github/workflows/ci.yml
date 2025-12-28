@@ -1,0 +1,30 @@
+name: CI Check
+
+on:
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for FAIL_CI marker
+        run: |
+          echo "Checking commits for [FAIL_CI] marker..."
+
+          BASE_SHA=${{ github.event.pull_request.base.sha }}
+          HEAD_SHA=${{ github.event.pull_request.head.sha }}
+
+          FAIL_COMMITS=$(git log --format="%H %s" ${BASE_SHA}..${HEAD_SHA} | grep -i "\[FAIL_CI\]" || true)
+
+          if [ -n "$FAIL_COMMITS" ]; then
+            echo "::error::Found commits with [FAIL_CI] marker:"
+            echo "$FAIL_COMMITS"
+            exit 1
+          fi
+
+          echo "All commits passed CI check."
