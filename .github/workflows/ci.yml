@@ -12,13 +12,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check for FAIL_CI marker
+      - name: Check for CI markers
         run: |
-          echo "Checking commits for [FAIL_CI] marker..."
+          echo "Checking commits for CI markers..."
 
           BASE_SHA=${{ github.event.pull_request.base.sha }}
           HEAD_SHA=${{ github.event.pull_request.head.sha }}
 
+          # Check for slow test marker - sleep 30 seconds if found
+          SLOW_COMMITS=$(git log --format="%H %s" ${BASE_SHA}..${HEAD_SHA} | grep -i "\[CI_SLOW_TEST\]" || true)
+          if [ -n "$SLOW_COMMITS" ]; then
+            echo "Found commits with [CI_SLOW_TEST] marker, waiting 30 seconds..."
+            sleep 30
+          fi
+
+          # Check for fail marker
           FAIL_COMMITS=$(git log --format="%H %s" ${BASE_SHA}..${HEAD_SHA} | grep -i "\[FAIL_CI\]" || true)
 
           if [ -n "$FAIL_COMMITS" ]; then
